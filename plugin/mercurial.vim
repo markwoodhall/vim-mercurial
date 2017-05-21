@@ -47,7 +47,7 @@ endfunction
 
 function! mercurial#revert_under_cursor() abort
   let line = getline('.')
-  if line =~ '    M'
+  if line =~ '    M' || line =~ '    !'
     call mercurial#revert(line[g:mercurial#filename_offset:-1])
     call mercurial#status()
     call s:goto_line(line)
@@ -69,12 +69,40 @@ function! mercurial#user()
   return user
 endfunction
 
+function! mercurial#commit(message) abort
+  if empty(a:message)
+    return
+  endif
+  call system('hg commit -m "' . a:message .'"')
+endfunction
+
+function! mercurial#commit_from_buffer() abort
+  let message = []
+  for l in getline(0, '$')
+    if l !~ '^HG:.*$'
+      let message += [l]
+    endif
+  endfor
+
+  if empty(message)
+    return
+  endif
+
+  let message = join(message, '\n')
+
+  echomsg 'using message ' .message
+  call mercurial#commit(message)
+endfunction
+
 function! mercurial#prepare_commit() abort
   let info = getline(0, '$')
   execute ":q!"
   let command = (expand('%b') =~ 'vim-mercurial-commit' || buffer_exists('vim-mercurial-commit')) ? 'e' : 'split'
   execute command 'vim-mercurial-commit'
-    setlocal buftype=nofile
+
+    execute "resize 20"
+    silent execute "f ". tempname()
+
     setlocal syntax=diff
 
     syn match hgModified	"M .*$"
@@ -101,9 +129,11 @@ function! mercurial#prepare_commit() abort
 
     normal ggdG
     call append(0, lines)
+
     normal dd
     normal gg
 
+    autocmd BufWrite * call mercurial#commit_from_buffer()
 endfunction
 
 function! mercurial#status() abort
