@@ -79,7 +79,10 @@ function! mercurial#commit(message) abort
   endif
   let temp_commit_file = tempname()
   call system('echo "'.substitute(a:message, '"', '\\"', 'g').'" > '.temp_commit_file)
-  call system('hg commit -m "$(cat '.temp_commit_file.')"')
+  let commit_output = system('hg commit -m "$(cat '.temp_commit_file.')"')
+  if empty(commit_output)
+    call mercurial#commit_stat()
+  endif
 endfunction
 
 function! mercurial#commit_from_buffer() abort
@@ -92,20 +95,17 @@ function! mercurial#commit_from_buffer() abort
     endif
   endfor
 
-  if empty(message)
-    return
+  if !empty(message)
+    let message = join(message, '\n')
+
+    echomsg 'using '. message
+    call mercurial#commit(message)
   endif
-
-  let message = join(message, '\n')
-
-  call mercurial#commit(message)
 endfunction
 
 function! mercurial#prepare_commit() abort
   let info = getline(0, '$')
-  execute ":q!"
-  let command = expand('%b') =~ 'vim-mercurial-commit' ? 'e' : 'split'
-  execute command 'vim-mercurial-commit'
+  execute 'e vim-mercurial-commit'
 
     execute "resize 20"
     silent execute "f ". tempname()
@@ -131,7 +131,7 @@ function! mercurial#prepare_commit() abort
                 \ "HG: branch " . mercurial#branch()]
 
     for i in info
-      let lines += ['HG: ' . i]
+      let lines += [i]
     endfor
 
     normal ggdG
@@ -141,7 +141,8 @@ function! mercurial#prepare_commit() abort
     normal gg
 
     nnoremap <silent> <buffer> D :call append(line('.'), split(system('hg diff '.getline('.')[g:mercurial#filename_offset+3:-1]), '\n'))<CR>
-    autocmd BufWrite * call mercurial#commit_from_buffer()
+    autocmd! * <buffer>
+    autocmd BufLeave <buffer> call mercurial#commit_from_buffer()
 endfunction
 
 function! mercurial#status() abort
@@ -229,15 +230,38 @@ function! mercurial#change_list(cmd, args)
     normal gg
 endfunction
 
-function! mercurial#hglog(...)
+function! mercurial#commit_stat()
+  let output = split(system('hg log --limit 1 --stat'), '\n')
+
+  let command = expand('%b') =~ 'vim-mercurial' ? 'e' : 'split'
+  execute command 'vim-mercurial'
+
+    execute "resize 20"
+
+    setlocal buftype=nofile
+    setlocal syntax=diff
+
+    syn match hgDeletions   "-"
+    syn match hgAdditions   "+"
+
+    hi hgDeletions guifg=#EC5F67
+    hi hgAdditions guifg=#99C794
+
+    normal ggdG
+    call append(0, output[6:-2])
+    normal dd
+    normal gg
+endfunction
+
+function! mercurial#log(...)
   call mercurial#change_list('log', a:000)
 endfunction
 
-function! mercurial#hginc(...)
+function! mercurial#inc(...)
   call mercurial#change_list('incoming', a:000)
 endfunction
 
-function! mercurial#hgout(...)
+function! mercurial#out(...)
   call mercurial#change_list('outgoing', a:000)
 endfunction
 
@@ -261,9 +285,10 @@ function! mercurial#hg(...)
 endfunction
 
 autocmd BufEnter * command! -buffer -nargs=* Hg :call mercurial#hg(<f-args>)
-autocmd BufEnter * command! -buffer -nargs=* Hglog :call mercurial#hglog(<f-args>)
-autocmd BufEnter * command! -buffer -nargs=* Hginc :call mercurial#hginc(<f-args>)
-autocmd BufEnter * command! -buffer -nargs=* Hgout :call mercurial#hgout(<f-args>)
+autocmd BufEnter * command! -buffer -nargs=* Hglog :call mercurial#log(<f-args>)
+autocmd BufEnter * command! -buffer -nargs=* Hginc :call mercurial#inc(<f-args>)
+autocmd BufEnter * command! -buffer -nargs=* Hgout :call mercurial#out(<f-args>)
+autocmd BufEnter * command! -buffer -nargs=* Hgcstat :call mercurial#commit_stat(<f-args>)
 autocmd BufEnter * command! -buffer Hgstatus :call mercurial#status()
 autocmd BufEnter * command! -buffer -nargs=* -complete=file Hgadd :call mercurial#add(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* -complete=file Hgforget :call mercurial#forget(<f-args>)
