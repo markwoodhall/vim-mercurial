@@ -2,7 +2,7 @@ if exists('g:loaded_mercurial') || &cp
   finish
 endif
 
-if !filereadable('.hg/hgrc')
+if !filereadable('.hg/00changelog.i')
   finish
 endif
 
@@ -97,8 +97,6 @@ function! mercurial#commit_from_buffer() abort
 
   if !empty(message)
     let message = join(message, '\n')
-
-    echomsg 'using '. message
     call mercurial#commit(message)
   endif
 endfunction
