@@ -255,6 +255,10 @@ function! mercurial#log(...)
   call mercurial#change_list('log', a:000)
 endfunction
 
+function! mercurial#glog(...)
+  call mercurial#change_list('glog', a:000)
+endfunction
+
 function! mercurial#inc(...)
   call mercurial#change_list('incoming', a:000)
 endfunction
@@ -282,8 +286,25 @@ function! mercurial#hg(...)
     normal dd
 endfunction
 
-autocmd BufEnter * command! -buffer -nargs=* Hg :call mercurial#hg(<f-args>)
+function! mercurial#complete_command(A, L, P)
+  let commands = []
+  let output = split(system('hg --help'), '\n')[5:-1]
+
+  for o in output
+    if o == 'enabled extensions:'
+      break
+    endif
+    if o =~ a:A
+      let commands += [split(o, ' ')[0]]
+    endif
+  endfor
+
+  return commands
+endfunction
+
+autocmd BufEnter * command! -buffer -nargs=* -complete=customlist,mercurial#complete_command Hg :call mercurial#hg(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* Hglog :call mercurial#log(<f-args>)
+autocmd BufEnter * command! -buffer -nargs=* Hgglog :call mercurial#glog(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* Hginc :call mercurial#inc(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* Hgout :call mercurial#out(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* Hgcstat :call mercurial#commit_stat(<f-args>)
