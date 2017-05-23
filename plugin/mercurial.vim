@@ -138,7 +138,7 @@ function! mercurial#prepare_commit() abort
     normal dd
     normal gg
 
-    nnoremap <silent> <buffer> D :call append(line('.'), split(system('hg diff '.getline('.')[g:mercurial#filename_offset+3:-1]), '\n'))<CR>
+    nnoremap <silent> <buffer> D :call append(line('.'), split(system('hg diff '.getline('.')[g:mercurial#filename_offset:-1]), '\n'))<CR>
     autocmd! * <buffer>
     autocmd BufLeave <buffer> call mercurial#commit_from_buffer()
 endfunction
