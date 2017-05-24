@@ -196,6 +196,44 @@ function! mercurial#status() abort
 
 endfunction
 
+function! mercurial#tag(...)
+  let args = ''
+  if len(a:0) >= 1
+    let args = join(a:000, ' ')
+  endif
+  let output = split(system('hg tag '. args), '\n')
+  if empty(output)
+    call mercurial#tags()
+  endif
+endfunction
+
+function! mercurial#tags(...)
+  let args = ''
+  if len(a:0) >= 1
+    let args = join(a:000, ' ')
+  endif
+  let output = split(system('hg tags '. args), '\n')
+
+  let command = expand('%b') =~ 'vim-mercurial' ? 'e' : 'split'
+  execute command 'vim-mercurial'
+
+    execute "resize 20"
+
+    setlocal buftype=nofile
+    setlocal syntax=diff
+
+    syn match hgTag	"^.*\s"
+
+    hi hgTag guifg=#FAC863
+
+    normal ggdG
+    call append(0, output)
+    normal dd
+    normal gg
+
+    nnoremap <silent> <buffer> D :call mercurial#log('--rev', split(getline('.'),':')[-1], '-p')<CR>
+endfunction
+
 function! mercurial#change_list(cmd, args)
   let args = ''
   if len(a:args) >= 1
@@ -304,6 +342,8 @@ function! mercurial#complete_command(A, L, P)
 endfunction
 
 autocmd BufEnter * command! -buffer -nargs=* -complete=customlist,mercurial#complete_command Hg :call mercurial#hg(<f-args>)
+autocmd BufEnter * command! -buffer -nargs=* Hgtag :call mercurial#tag(<f-args>)
+autocmd BufEnter * command! -buffer -nargs=* Hgtags :call mercurial#tags(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* Hglog :call mercurial#log(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* Hgglog :call mercurial#glog(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* Hginc :call mercurial#inc(<f-args>)
