@@ -109,6 +109,7 @@ function! mercurial#prepare_commit() abort
     silent execute "f ". tempname()
 
     setlocal syntax=diff
+    setlocal colorcolumn=80
 
     syn match hgModified	"M .*$"
     syn match hgAdded	    "A .*$"
