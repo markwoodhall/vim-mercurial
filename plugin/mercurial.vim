@@ -78,13 +78,13 @@ function! mercurial#user()
   return user
 endfunction
 
-function! mercurial#commit(message) abort
+function! mercurial#commit(message, files) abort
   if empty(a:message)
     return
   endif
   let temp_commit_file = tempname()
   call system('echo "'.substitute(a:message, '"', '\\"', 'g').'" > '.temp_commit_file)
-  let commit_output = system('hg commit -m "$(cat '.temp_commit_file.')"')
+  let commit_output = system('hg commit -m "$(cat '.temp_commit_file.')" ' . join(a:files, ' '))
   if empty(commit_output)
     call mercurial#commit_stat()
   endif
@@ -101,8 +101,19 @@ function! mercurial#commit_from_buffer() abort
   endfor
 
   if !empty(message)
+    let files = []
+    let found_files = 0
+    for f in getline(0, '$')
+      if f == 'Changes ready for commit: '
+        let found_files = 1
+      elseif found_files
+        if !empty(f)
+          let files += [f[g:mercurial#filename_offset:-1]]
+        endif
+      endif
+    endfor
     let message = join(message, '\n')
-    call mercurial#commit(message)
+    call mercurial#commit(message, files)
   endif
 endfunction
 
