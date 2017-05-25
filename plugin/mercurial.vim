@@ -19,6 +19,11 @@ function! s:goto_line(line)
   endfor
 endfunction
 
+function! mercurial#open_in_split()
+  let file = getline('.')[g:mercurial#filename_offset:-1]
+  execute 'leftabove split ' . file
+endfunction
+
 function! mercurial#add(file) abort
   call system('hg add '. a:file)
 endfunction
@@ -186,6 +191,7 @@ function! mercurial#status() abort
     normal ggdG
     call append(0, lines)
     normal dd
+    normal gg
 
     nnoremap <silent> <buffer> - :call mercurial#forget_under_cursor()<CR>
     nnoremap <silent> <buffer> + :call mercurial#add_under_cursor()<CR>
@@ -193,6 +199,7 @@ function! mercurial#status() abort
     nnoremap <silent> <buffer> R :call mercurial#status()<CR>
     nnoremap <silent> <buffer> C :call mercurial#prepare_commit()<CR>
     nnoremap <silent> <buffer> D :call append(line('.'), split(system('hg diff '.getline('.')[g:mercurial#filename_offset:-1]), '\n'))<CR>
+    nnoremap <silent> <buffer> E :call mercurial#open_in_split()<CR>
 
 endfunction
 
