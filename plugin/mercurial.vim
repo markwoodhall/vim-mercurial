@@ -78,13 +78,13 @@ function! mercurial#user()
   return user
 endfunction
 
-function! mercurial#commit(message, files) abort
+function! mercurial#commit(message, files, args) abort
   if empty(a:message)
     return
   endif
   let temp_commit_file = tempname()
   call system('echo "'.substitute(a:message, '"', '\\"', 'g').'" > '.temp_commit_file)
-  let commit_output = system('hg commit -m "$(cat '.temp_commit_file.')" ' . join(a:files, ' '))
+  let commit_output = system('hg commit -m "$(cat '.temp_commit_file.')" ' . join(a:files, ' ') . ' ' . a:args)
   if empty(commit_output)
     call mercurial#commit_stat()
   endif
@@ -113,13 +113,22 @@ function! mercurial#commit_from_buffer() abort
       endif
     endfor
     let message = join(message, '\n')
-    call mercurial#commit(message, files)
+    call mercurial#commit(message, files, s:commit_args)
   endif
 endfunction
 
-function! mercurial#prepare_commit() abort
-  let info = getline(0, '$')
-  execute 'e vim-mercurial-commit'
+function! mercurial#prepare_commit(...) abort
+  let s:commit_args = ''
+  if a:0 >= 1
+    let s:commit_args = join(a:000, ' ')
+  endif
+  let info = []
+  if expand('%b') == 'vim-mercurial'
+    let info = getline(0, '$')
+  endif
+
+  let command = expand('%b') == 'vim-mercurial' ? 'e' : 'split'
+  execute command 'vim-mercurial-commit'
 
     execute "resize 20"
     silent execute "f ". tempname()
@@ -209,6 +218,7 @@ function! mercurial#status() abort
     nnoremap <silent> <buffer> U :call mercurial#revert_under_cursor()<CR>
     nnoremap <silent> <buffer> R :call mercurial#status()<CR>
     nnoremap <silent> <buffer> C :call mercurial#prepare_commit()<CR>
+    nnoremap <silent> <buffer> A :call mercurial#prepare_commit('--amend')<CR>
     nnoremap <silent> <buffer> D :call append(line('.'), split(system('hg diff '.getline('.')[g:mercurial#filename_offset:-1]), '\n'))<CR>
     nnoremap <silent> <buffer> E :call mercurial#open_in_split()<CR>
 
@@ -259,7 +269,7 @@ function! mercurial#change_list(cmd, args)
   endif
   let output = split(system('hg '. a:cmd .' '. args), '\n')
 
-  let command = expand('%b') =~ 'vim-mercurial' ? 'e' : 'split'
+  let command = expand('%b') =~ 'vim-mercurial' ? 'e' : 'botright split'
   execute command 'vim-mercurial'
 
     execute "resize 20"
@@ -324,6 +334,51 @@ function! mercurial#out(...)
   call mercurial#change_list('outgoing', a:000)
 endfunction
 
+function! mercurial#blame(...)
+  let args = ''
+  if a:0 >= 1
+    let args = join(a:000, ' ')
+  endif
+  let args = expand('%') . ' ' . args
+  echomsg string(args)
+  let output = split(system('hg blame ' . args . ' --changeset --number --user --date -q'), '\n')
+  let current_line = line('.')
+
+  setlocal scrollbind nowrap nofoldenable
+  exe 'keepalt leftabove vsplit mercurial-blame'
+  setlocal nomodified nonumber scrollbind nowrap foldcolumn=0 nofoldenable
+
+    execute "vertical resize 30"
+    setlocal buftype=nofile
+    setlocal syntax=diff
+
+    execute current_line
+    syncbind
+
+    syn match hgBlameBoundary  "^\^"
+    syn match hgBlameBlank     "^\s\+\s\@="
+    syn match hgBlameAuthor    "\w\+"
+    syn match hgBlameNumber    "\d\+"
+    syn match hgBlameChangeset "[a-f0-9]\{12\}"
+    syn match hgBlameDate      "[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}"
+
+    hi hgBlameChangeset guifg=#FAC863
+    hi hgBlameAuthor guifg=#C595C5
+    hi hgBlameDate guifg=#6699CC
+    hi hgBlameNumber guifg=#FAC863
+
+    normal ggdG
+    let cleaned = []
+    for o in output
+      let cleaned += [split(o, ':')[0]]
+    endfor
+    call append(0, cleaned)
+    normal dd
+    normal gg
+
+    nnoremap <silent> <buffer> D :call mercurial#log('--rev', split(getline('.'),' ')[2], '-p')<CR>
+endfunction
+
 function! mercurial#hg(...)
   let args = ''
   if a:0 >= 1
@@ -360,6 +415,7 @@ function! mercurial#complete_command(A, L, P)
 endfunction
 
 autocmd BufEnter * command! -buffer -nargs=* -complete=customlist,mercurial#complete_command Hg :call mercurial#hg(<f-args>)
+autocmd BufEnter * command! -buffer -nargs=* Hgcommit :call mercurial#prepare_commit(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* Hgtag :call mercurial#tag(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* Hgtags :call mercurial#tags(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* Hglog :call mercurial#log(<f-args>)
@@ -367,6 +423,7 @@ autocmd BufEnter * command! -buffer -nargs=* Hgglog :call mercurial#glog(<f-args
 autocmd BufEnter * command! -buffer -nargs=* Hginc :call mercurial#inc(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* Hgout :call mercurial#out(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* Hgcstat :call mercurial#commit_stat(<f-args>)
+autocmd BufEnter * command! -buffer -nargs=* Hgblame :call mercurial#blame(<f-args>)
 autocmd BufEnter * command! -buffer Hgstatus :call mercurial#status()
 autocmd BufEnter * command! -buffer -nargs=* -complete=file Hgadd :call mercurial#add(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* -complete=file Hgforget :call mercurial#forget(<f-args>)
