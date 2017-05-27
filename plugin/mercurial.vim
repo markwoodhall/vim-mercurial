@@ -120,6 +120,11 @@ function! mercurial#commit_from_buffer() abort
   endif
 endfunction
 
+function! mercurial#inline_diff() abort
+  let output = split(system('hg diff '.getline('.')[g:mercurial#filename_offset:-1]), '\n')
+  call append(line('.'), output)
+endfunction
+
 function! mercurial#prepare_commit(...) abort
   let s:commit_args = ''
   if a:0 >= 1
@@ -170,7 +175,7 @@ function! mercurial#prepare_commit(...) abort
     normal dd
     normal gg
 
-    nnoremap <silent> <buffer> D :call append(line('.'), split(system('hg diff '.getline('.')[g:mercurial#filename_offset:-1]), '\n'))<CR>
+    nnoremap <silent> <buffer> D :call mercurial#inline_diff()<CR>
     autocmd! * <buffer>
     autocmd BufLeave <buffer> call mercurial#commit_from_buffer()
 endfunction
@@ -225,7 +230,7 @@ function! mercurial#status() abort
     nnoremap <silent> <buffer> R :call mercurial#status()<CR>
     nnoremap <silent> <buffer> C :call mercurial#prepare_commit()<CR>
     nnoremap <silent> <buffer> A :call mercurial#prepare_commit('--amend')<CR>
-    nnoremap <silent> <buffer> D :call append(line('.'), split(system('hg diff '.getline('.')[g:mercurial#filename_offset:-1]), '\n'))<CR>
+    nnoremap <silent> <buffer> D :call mercurial#inline_diff()<CR>
     nnoremap <silent> <buffer> E :call mercurial#open_in_split()<CR>
 
 endfunction
