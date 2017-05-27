@@ -139,19 +139,22 @@ function! mercurial#prepare_commit(...) abort
     setlocal syntax=diff
     setlocal colorcolumn=80
 
+    syn region hgCommitMessage start="\%1l" end="\%2l" 
     syn match hgModified	"M .*$"
     syn match hgAdded	    "A .*$"
     syn match hgMissing	  "! .*$"
     syn match hgNew	      "? .*$"
     syn match hgBranch	  "(.*)$"
 
+    hi hgCommitMessage guifg=#99C794
     hi hgModified guifg=#6699CC
     hi hgMissing guifg=#5FB3B3
     hi hgAdded guifg=#99C794
     hi hgNew guifg=#C595C5
     hi hgBranch guifg=#FAC863
 
-    let lines =  ["HG: Enter commit message.  Lines beginning with 'HG:' are removed.",
+    let lines =  ["",
+                \ "HG: Enter commit message.  Lines beginning with 'HG:' are removed.",
                 \ "HG: Leave message empty to abort commit.",
                 \ "HG: --",
                 \ "HG: user: " . mercurial#user(),
