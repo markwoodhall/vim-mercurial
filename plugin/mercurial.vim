@@ -115,7 +115,6 @@ function! mercurial#commit_from_buffer() abort
         endif
       endif
     endfor
-    echomsg string(files)
     let message = join(message, '\n')
     call mercurial#commit(message, files, s:commit_args)
   endif
