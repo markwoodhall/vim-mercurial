@@ -108,10 +108,14 @@ function! mercurial#commit_from_buffer() abort
         let found_files = 1
       elseif found_files
         if !empty(f)
-          let files += [f[g:mercurial#filename_offset:-1]]
+          let file = f[g:mercurial#filename_offset:-1]
+          if filereadable(file)
+            let files += [file]
+          endif
         endif
       endif
     endfor
+    echomsg string(files)
     let message = join(message, '\n')
     call mercurial#commit(message, files, s:commit_args)
   endif
