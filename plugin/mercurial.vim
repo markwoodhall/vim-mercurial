@@ -56,7 +56,7 @@ endfunction
 
 function! mercurial#revert_under_cursor() abort
   let line = getline('.')
-  if line =~ '    M' || line =~ '    !'
+  if line =~ '    M' || line =~ '    !'  || line =~ '    R'
     call mercurial#revert(line[g:mercurial#filename_offset:-1])
     call mercurial#status()
     call s:goto_line(line)
@@ -191,6 +191,7 @@ function! mercurial#status() abort
 
     syn match hgModified	"M .*$"
     syn match hgAdded	    "A .*$"
+    syn match hgRemoved   "R .*$"
     syn match hgMissing	  "! .*$"
     syn match hgNew	      "? .*$"
     syn match hgBranch	  "(.*)$"
@@ -199,6 +200,7 @@ function! mercurial#status() abort
     hi hgMissing guifg=#5FB3B3
     hi hgAdded guifg=#99C794
     hi hgNew guifg=#C595C5
+    hi hgRemoved guifg=#EC695D
     hi hgBranch guifg=#FAC863
 
     let hg_branch = mercurial#branch()
@@ -390,6 +392,19 @@ function! mercurial#blame(...)
     nnoremap <silent> <buffer> D :call mercurial#log('--rev', split(getline('.'),' ')[2], '-p')<CR>
 endfunction
 
+function! mercurial#rename(from, to, ...) abort
+  let args = ''
+  if a:0 >= 1
+    let args = join(a:000, ' ')
+  endif
+  let output = split(system('hg rename ' . a:from . ' ' . a:to . ' ' . args), '\n')
+  if empty(output)
+    if expand('%') == a:from
+      execute 'e ' . a:to
+    endif
+  endif
+endfunction
+
 function! mercurial#hg(...)
   let args = ''
   if a:0 >= 1
@@ -435,7 +450,15 @@ autocmd BufEnter * command! -buffer -nargs=* Hginc :call mercurial#inc(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* Hgout :call mercurial#out(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* Hgcstat :call mercurial#commit_stat(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* Hgblame :call mercurial#blame(<f-args>)
+
 autocmd BufEnter * command! -buffer Hgstatus :call mercurial#status()
+
 autocmd BufEnter * command! -buffer -nargs=* -complete=file Hgadd :call mercurial#add(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* -complete=file Hgforget :call mercurial#forget(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* -complete=file Hgrevert :call mercurial#revert(<f-args>)
+autocmd BufEnter * command! -buffer -nargs=* -complete=file Hgrename :call mercurial#rename(<f-args>)
+
+autocmd BufEnter * command! -buffer -nargs=* -complete=file HgaddB :call mercurial#add(expand('%'), <f-args>)
+autocmd BufEnter * command! -buffer -nargs=* -complete=file HgforgetB :call mercurial#forget(expand('%'), <f-args>)
+autocmd BufEnter * command! -buffer -nargs=* -complete=file HgrevertB :call mercurial#revert(expand('%'), <f-args>)
+autocmd BufEnter * command! -buffer -nargs=* -complete=file HgrenameB :call mercurial#rename(expand('%'), <f-args>)
