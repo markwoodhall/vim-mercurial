@@ -479,8 +479,9 @@ function! mercurial#complete_command(A, L, P)
     if o == 'enabled extensions:'
       break
     endif
-    if o =~ a:A
-      let commands += [split(o, ' ')[0]]
+    let command = split(o, ' ')
+    if len(command) > 0 && command[0] =~ a:A
+      let commands += [command[0]]
     endif
   endfor
 
