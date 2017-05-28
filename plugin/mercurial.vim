@@ -290,17 +290,9 @@ function! mercurial#change_list(cmd, args)
     setlocal buftype=nofile
     setlocal syntax=diff
 
-    syn match hgChangeset	"changeset:"
-    syn match hgTag	      "tag:"
-    syn match hgUser      "user:"
-    syn match hgDate      "date:"
-    syn match hgSummary   "summary:"
+    syn match hgTitle	"^\w*"
 
-    hi hgChangeset guifg=#FAC863
-    hi hgTag       guifg=#FAC863
-    hi hgUser      guifg=#FAC863
-    hi hgDate      guifg=#FAC863
-    hi hgSummary   guifg=#FAC863
+    hi hgTitle guifg=#FAC863
 
     normal ggdG
     call append(0, output)
@@ -345,6 +337,39 @@ endfunction
 
 function! mercurial#out(...)
   call mercurial#change_list('outgoing', a:000)
+endfunction
+
+function! mercurial#heads(...)
+  call mercurial#change_list('heads', a:000)
+endfunction
+
+function! mercurial#branches(...)
+  let args = ''
+  if len(a:0) >= 1
+    let args = join(a:000, ' ')
+  endif
+  let output = split(system('hg branches '. args), '\n')
+
+  let command = expand('%b') =~ 'vim-mercurial' ? 'e' : 'botright split'
+  execute command 'vim-mercurial'
+
+    execute "resize 20"
+
+    setlocal buftype=nofile
+    setlocal syntax=diff
+
+    syn match hgTitle	"^\w*"
+    syn match hgValue	"\w*:\w*"
+    syn region hgBranch start="\%1l" end="\%2l" contains=hgValue
+
+    hi hgValue guifg=#ffffff
+    hi hgTitle guifg=#FAC863
+    hi hgBranch guifg=#99C794
+
+    normal ggdG
+    call append(0, output)
+    normal dd
+    normal gg
 endfunction
 
 function! mercurial#blame(...)
@@ -466,6 +491,9 @@ autocmd BufEnter * command! -buffer -nargs=* -complete=customlist,mercurial#comp
 autocmd BufEnter * command! -buffer -nargs=* Hgcommit :call mercurial#prepare_commit(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* Hgtag :call mercurial#tag(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* Hgtags :call mercurial#tags(<f-args>)
+autocmd BufEnter * command! -buffer -nargs=* Hgheads :call mercurial#heads(<f-args>)
+autocmd BufEnter * command! -buffer -nargs=* Hgbranch :call mercurial#hg('branch', <f-args>)
+autocmd BufEnter * command! -buffer -nargs=* Hgbranches :call mercurial#branches(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* Hglog :call mercurial#log(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* Hgglog :call mercurial#glog(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* Hginc :call mercurial#inc(<f-args>)
