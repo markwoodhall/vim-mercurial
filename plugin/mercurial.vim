@@ -405,6 +405,28 @@ function! mercurial#rename(from, to, ...) abort
   endif
 endfunction
 
+function! mercurial#config(...)
+  let args = ''
+  if a:0 >= 1
+    let args = join(a:000, ' ')
+  endif
+
+  let output = split(system('hg showconfig ' . args), '\n')
+
+  let command = expand('%b') =~ 'vim-mercurial' ? 'e' : 'split'
+  execute command 'vim-mercurial'
+
+    execute "resize 20"
+
+    setlocal buftype=nofile
+    setlocal syntax=ini
+
+    normal ggdG
+    call append(0, output)
+    normal dd
+    normal gg
+endfunction
+
 function! mercurial#hg(...)
   let args = ''
   if a:0 >= 1
@@ -450,6 +472,7 @@ autocmd BufEnter * command! -buffer -nargs=* Hginc :call mercurial#inc(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* Hgout :call mercurial#out(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* Hgcstat :call mercurial#commit_stat(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* Hgblame :call mercurial#blame(<f-args>)
+autocmd BufEnter * command! -buffer -nargs=* Hgconfig :call mercurial#config(<f-args>)
 
 autocmd BufEnter * command! -buffer Hgstatus :call mercurial#status()
 
