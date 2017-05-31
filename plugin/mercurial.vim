@@ -32,6 +32,10 @@ function! mercurial#forget(file) abort
   call system('hg forget '. a:file)
 endfunction
 
+function! mercurial#remove(file) abort
+  call system('hg remove '. a:file)
+endfunction
+
 function! mercurial#revert(file) abort
   call system('hg revert '. a:file)
 endfunction
@@ -40,6 +44,12 @@ function! mercurial#forget_under_cursor() abort
   let line = getline('.')
   if line =~ '    A'
     call mercurial#forget(line[g:mercurial#filename_offset:-1])
+    call mercurial#status()
+    call s:goto_line(line)
+  endif
+
+  if line =~ '    !'
+    call mercurial#remove(line[g:mercurial#filename_offset:-1])
     call mercurial#status()
     call s:goto_line(line)
   endif
@@ -290,9 +300,17 @@ function! mercurial#change_list(cmd, args)
     setlocal buftype=nofile
     setlocal syntax=diff
 
-    syn match hgTitle	"^\w*"
+    syn match hgChangeset	"changeset:"
+    syn match hgTag	      "tag:"
+    syn match hgUser      "user:"
+    syn match hgDate      "date:"
+    syn match hgSummary   "summary:"
 
-    hi hgTitle guifg=#FAC863
+    hi hgChangeset guifg=#FAC863
+    hi hgTag       guifg=#FAC863
+    hi hgUser      guifg=#FAC863
+    hi hgDate      guifg=#FAC863
+    hi hgSummary   guifg=#FAC863
 
     normal ggdG
     call append(0, output)
@@ -508,10 +526,12 @@ autocmd BufEnter * command! -buffer Hgstatus :call mercurial#status()
 
 autocmd BufEnter * command! -buffer -nargs=* -complete=file Hgadd :call mercurial#add(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* -complete=file Hgforget :call mercurial#forget(<f-args>)
+autocmd BufEnter * command! -buffer -nargs=* -complete=file Hgremove :call mercurial#forget(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* -complete=file Hgrevert :call mercurial#revert(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* -complete=file Hgrename :call mercurial#rename(<f-args>)
 
-autocmd BufEnter * command! -buffer -nargs=* -complete=file HgaddB :call mercurial#add(expand('%'), <f-args>)
-autocmd BufEnter * command! -buffer -nargs=* -complete=file HgforgetB :call mercurial#forget(expand('%'), <f-args>)
-autocmd BufEnter * command! -buffer -nargs=* -complete=file HgrevertB :call mercurial#revert(expand('%'), <f-args>)
+autocmd BufEnter * command! -buffer -nargs=* HgaddB :call mercurial#add(expand('%'), <f-args>)
+autocmd BufEnter * command! -buffer -nargs=* HgforgetB :call mercurial#forget(expand('%'), <f-args>)
+autocmd BufEnter * command! -buffer -nargs=* HgremoveB :call mercurial#forget(expand('%'), <f-args>)
+autocmd BufEnter * command! -buffer -nargs=* HgrevertB :call mercurial#revert(expand('%'), <f-args>)
 autocmd BufEnter * command! -buffer -nargs=* -complete=file HgrenameB :call mercurial#rename(expand('%'), <f-args>)
