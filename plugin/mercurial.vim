@@ -302,11 +302,13 @@ function! mercurial#change_list(cmd, args)
 
     syn match hgChangeset	"changeset:"
     syn match hgTag	      "tag:"
+    syn match hgBranch    "branch:"
     syn match hgUser      "user:"
     syn match hgDate      "date:"
     syn match hgSummary   "summary:"
 
     hi hgChangeset guifg=#FAC863
+    hi hgBranch    guifg=#FAC863
     hi hgTag       guifg=#FAC863
     hi hgUser      guifg=#FAC863
     hi hgDate      guifg=#FAC863
@@ -316,6 +318,12 @@ function! mercurial#change_list(cmd, args)
     call append(0, output)
     normal dd
     normal gg
+endfunction
+
+function! mercurial#tag_revision_under_cursor(tag)
+  if getline('.') =~ '^changeset:'
+    call mercurial#tag(a:tag, '--rev', split(getline('.'),':')[-1])
+  endif
 endfunction
 
 function! mercurial#commit_stat()
@@ -509,6 +517,7 @@ endfunction
 autocmd BufEnter * command! -buffer -nargs=* -complete=customlist,mercurial#complete_command Hg :call mercurial#hg(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* Hgcommit :call mercurial#prepare_commit(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* Hgtag :call mercurial#tag(<f-args>)
+autocmd BufEnter * command! -buffer -nargs=* Hgtagc :call mercurial#tag_revision_under_cursor(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* Hgtags :call mercurial#tags(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* Hgheads :call mercurial#heads(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* Hgbranch :call mercurial#hg('branch', <f-args>)
