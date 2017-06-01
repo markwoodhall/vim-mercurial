@@ -530,6 +530,8 @@ autocmd BufEnter * command! -buffer -nargs=* Hgcstat :call mercurial#commit_stat
 autocmd BufEnter * command! -buffer -nargs=* Hgblame :call mercurial#blame(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* Hgconfig :call mercurial#config(<f-args>)
 autocmd BufEnter * command! -buffer -nargs=* Hgdiff :call execute('HGdiff')
+autocmd BufEnter * command! -buffer -nargs=* Hgpull :call mercurial#hg('pull', <f-args>)
+autocmd BufEnter * command! -buffer -nargs=* Hgpush :call mercurial#hg('push', <f-args>)
 
 autocmd BufEnter * command! -buffer Hgstatus :call mercurial#status()
 
