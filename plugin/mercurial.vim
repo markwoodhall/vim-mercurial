@@ -119,7 +119,8 @@ function! mercurial#commit_from_buffer() abort
       elseif found_files
         if !empty(f)
           let file = f[g:mercurial#filename_offset:-1]
-          if filereadable(file)
+          let action = f[g:mercurial#filename_offset-2:-1]
+          if filereadable(file) || action =~ 'R\s.*'
             let files += [file]
           endif
         endif
@@ -158,12 +159,14 @@ function! mercurial#prepare_commit(...) abort
     syn match hgModified	"M .*$"
     syn match hgAdded	    "A .*$"
     syn match hgMissing	  "! .*$"
+    syn match hgRemoved   "R .*$"
     syn match hgNew	      "? .*$"
     syn match hgBranch	  "(.*)$"
 
     hi hgCommitMessage guifg=#99C794
     hi hgModified guifg=#6699CC
     hi hgMissing guifg=#5FB3B3
+    hi hgRemoved guifg=#EC695D
     hi hgAdded guifg=#99C794
     hi hgNew guifg=#C595C5
     hi hgBranch guifg=#FAC863
