@@ -19,6 +19,19 @@ function! s:goto_line(line)
   endfor
 endfunction
 
+
+function! s:get_visual_selection() range
+    let old_reg = getreg('"')
+    let old_regtype = getregtype('"')
+    let old_clipboard = &clipboard
+    set clipboard&
+    silent normal! ""gvy
+    let selection = getreg('"')
+    call setreg('"', old_reg, old_regtype)
+    let &clipboard = old_clipboard
+    return split(selection, '\n')
+endfunction
+
 function! mercurial#open_in_split()
   let file = getline('.')[g:mercurial#filename_offset:-1]
   execute 'leftabove split ' . file
@@ -55,6 +68,24 @@ function! mercurial#forget_under_cursor() abort
   endif
 endfunction
 
+function! mercurial#forget_range_under_cursor() range
+  let last_line = ''
+  for line in s:get_visual_selection()
+    if line =~ '    A'
+      call mercurial#forget(line[g:mercurial#filename_offset:-1])
+      let last_line = line
+    endif
+
+    if line =~ '    !'
+      call mercurial#remove(line[g:mercurial#filename_offset:-1])
+      let last_line = line
+    endif
+  endfor
+
+  call mercurial#status()
+  call s:goto_line(line)
+endfunction
+
 function! mercurial#add_under_cursor() abort
   let line = getline('.')
   if line =~ '    ?'
@@ -64,6 +95,19 @@ function! mercurial#add_under_cursor() abort
   endif
 endfunction
 
+function! mercurial#add_range_under_cursor() range
+  let last_line = ''
+  for line in s:get_visual_selection()
+    if line =~ '    ?'
+      call mercurial#add(line[g:mercurial#filename_offset:-1])
+      let last_line = line
+    endif
+  endfor
+
+  call mercurial#status()
+  call s:goto_line(line)
+endfunction
+
 function! mercurial#revert_under_cursor() abort
   let line = getline('.')
   if line =~ '    M' || line =~ '    !'  || line =~ '    R'
@@ -71,6 +115,19 @@ function! mercurial#revert_under_cursor() abort
     call mercurial#status()
     call s:goto_line(line)
   endif
+endfunction
+
+function! mercurial#revert_range_under_cursor() range
+  let last_line = ''
+  for line in s:get_visual_selection()
+    if line =~ '    M' || line =~ '    !'  || line =~ '    R'
+      call mercurial#revert(line[g:mercurial#filename_offset:-1])
+      let last_line = line
+    endif
+  endfor
+
+  call mercurial#status()
+  call s:goto_line(line)
 endfunction
 
 function! mercurial#branch()
@@ -240,8 +297,11 @@ function! mercurial#status() abort
     normal gg
 
     nnoremap <silent> <buffer> - :call mercurial#forget_under_cursor()<CR>
+    vnoremap <silent> <buffer> - :call mercurial#forget_range_under_cursor()<CR>
     nnoremap <silent> <buffer> + :call mercurial#add_under_cursor()<CR>
+    vnoremap <silent> <buffer> + :call mercurial#add_range_under_cursor()<CR>
     nnoremap <silent> <buffer> U :call mercurial#revert_under_cursor()<CR>
+    vnoremap <silent> <buffer> U :call mercurial#revert_range_under_cursor()<CR>
     nnoremap <silent> <buffer> R :call mercurial#status()<CR>
     nnoremap <silent> <buffer> C :call mercurial#prepare_commit()<CR>
     nnoremap <silent> <buffer> A :call mercurial#prepare_commit('--amend')<CR>
