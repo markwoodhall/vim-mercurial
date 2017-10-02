@@ -41,6 +41,10 @@ function! mercurial#add(file) abort
   call system('hg add '. a:file)
 endfunction
 
+function! mercurial#addremove(files) abort
+  call system('hg addremove '. join(a:files, ' '))
+endfunction
+
 function! mercurial#forget(file) abort
   call system('hg forget '. a:file)
 endfunction
@@ -104,6 +108,21 @@ function! mercurial#add_range_under_cursor() range
     endif
   endfor
 
+  call mercurial#status()
+  call s:goto_line(line)
+endfunction
+
+function! mercurial#add_remove_range_under_cursor() range
+  let last_line = ''
+  let lines = []
+  for line in s:get_visual_selection()
+    if line =~ '    ?' || line =~ '    !'
+      let lines += [line[g:mercurial#filename_offset:-1]]
+      let last_line = line
+    endif
+  endfor
+
+  call mercurial#addremove(lines)
   call mercurial#status()
   call s:goto_line(line)
 endfunction
@@ -298,6 +317,7 @@ function! mercurial#status() abort
 
     nnoremap <silent> <buffer> - :call mercurial#forget_under_cursor()<CR>
     vnoremap <silent> <buffer> - :call mercurial#forget_range_under_cursor()<CR>
+    vnoremap <silent> <buffer> ? :call mercurial#add_remove_range_under_cursor()<CR>
     nnoremap <silent> <buffer> + :call mercurial#add_under_cursor()<CR>
     vnoremap <silent> <buffer> + :call mercurial#add_range_under_cursor()<CR>
     nnoremap <silent> <buffer> U :call mercurial#revert_under_cursor()<CR>
